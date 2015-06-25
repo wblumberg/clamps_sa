@@ -1,4 +1,5 @@
 #!/usr/bin/python
+import os
 
 #import ALL THE THINGS! (most are probably not needed. I'm too lazy to purge.)
 import matplotlib
@@ -27,6 +28,11 @@ import sys
 import warnings
 warnings.filterwarnings("ignore")
 
+os.system('rm /data/soundings/blumberg/programs/clamps_sa/current_ww.*')
+#os.system("cd /data/soundings/blumberg/programs/clamps_sa/")
+os.system('wget -P /data/soundings/blumberg/programs/clamps_sa/ http://mesonet.agron.iastate.edu/data/gis/shape/4326/us/current_ww.zip')
+os.system('unzip /data/soundings/blumberg/programs/clamps_sa/current_ww.zip -d /data/soundings/blumberg/programs/clamps_sa/')
+
 #User Inputish area *****
 home_directory = '/Users/blumberg/'
 projection_type='lcc'
@@ -37,7 +43,7 @@ UND_names = ['Kevin Mahoney']
 
 #Time stuff for the current time.
 start_time = datetime.datetime.now()
-c = datetime.datetime.now() + datetime.timedelta(hours=5)
+c = datetime.datetime.now()
 year = c.year
 month = c.month
 day = c.day
@@ -138,8 +144,10 @@ for line in data:
             names.extend([name1[1::]+' '+name2])
 
 #UND Chaser locations ***********
-UND_lats=[37.37545]
-UND_lons=[-100.1950]
+location = np.genfromtxt('/data/soundings/http/blumberg/clamps/ll.txt', delimiter=',', dtype=float)
+print location
+UND_lats=[location[-1][0]]
+UND_lons=[location[-1][1]]
 #i=0
 #for UND_name in UND_names:
 #    try:
@@ -170,7 +178,8 @@ second_nearest_radar = 'K'+radars[second_nearest_radar_idx]
 #*************************************************
 
 #Obnoxious datetime string stuff to download recent radar data***********
-d = datetime.datetime.now() + datetime.timedelta(hours=5)
+d = datetime.datetime.now()
+"""
 date_time = d.strftime(" %B %d, %Y\n%I:%M%p CDT")
 date_time_text = date_time
 year = d.year
@@ -248,7 +257,8 @@ while restart:
         if i==15:
             nearest_radar==second_nearest_radar
         continue
-        
+file_save_name = '/data/ldm/nexrad2/'       
+"""
 radar_time = hour_str+":"+minute_str+" UTC"
 #*******************************************************************************************
 
@@ -336,21 +346,22 @@ for website in tornado_websites:
 #****************************************************************************************
 
 #Plot text
-created_text = 'Created by David Goines\nUniversity of North Dakota\naero.und.edu/~dgoines'
+created_text = 'Adapted from a syypicripCreated by David Goines\nUniversity of North Dakota\naero.und.edu/~dgoines'
+created_text = ''
 title_text = 'OU/NSSL CLAMPS Trailer Location\nNearest Radar: '+nearest_radar+'\nLatest 0.5$^\circ$ scan: '+radar_time
 
 #CREATE PLOT****************************************************************************************************************************************
 print "Creating plot"
 new_UND_lons, new_UND_lats = m(UND_lons,UND_lats)
 new_lons, new_lats = m(lons,lats)
-fig = plt.figure(figsize=(18, 11))
+fig = plt.figure(figsize=(16, 12), facecolor='k')
 ax1 = fig.add_axes([0.1, 0.1, 0.8, 0.8])
 #*******************Map boundaries
-m.drawcoastlines() # Draws the coastlines
-m.drawcountries(linewidth=2.5) # Draw the country borders
-m.drawmapboundary(fill_color='aqua') # This will plot the oceans the given color
-m.drawstates(linewidth=1.5, zorder=3) # Draw the state borders
-m.fillcontinents(color='#FFFFFF', lake_color='aqua', zorder=0) # Fill the continents with a color
+m.drawcoastlines(color='#FFFFFF') # Draws the coastlines
+m.drawcountries(color='#FFFFFF', linewidth=2.5) # Draw the country borders
+m.drawmapboundary(fill_color='black') # This will plot the oceans the given color
+m.drawstates(color='#FFFFFF', linewidth=1.5, zorder=3) # Draw the state borders
+m.fillcontinents(color='#000000', lake_color='black', zorder=0) # Fill the continents with a color
 #*******************Highways
 #print "pull in road shapefiles..."
 #for UND_state in UND_states:
@@ -378,7 +389,7 @@ for i in xrange(len(tstorm_lon_list)):
         tstorm_lon_list_new.extend([tstorm_lon_temp])
     tstorm_lon_list_new.extend([tstorm_lon_list_new[0]])
     tstorm_lat_list_new.extend([tstorm_lat_list_new[0]])
-    plt.plot(tstorm_lon_list_new,tstorm_lat_list_new,'b--',linewidth=1.5, zorder=6)
+    plt.plot(tstorm_lon_list_new,tstorm_lat_list_new,'#0000FF', ls='--', linewidth=2.5, zorder=6)
 for i in xrange(len(tornado_lon_list)):
     tornado_lat_list_new = []
     tornado_lon_list_new = []
@@ -390,18 +401,18 @@ for i in xrange(len(tornado_lon_list)):
         tornado_lon_list_new.extend([tornado_lon_temp])
     tornado_lon_list_new.extend([tornado_lon_list_new[0]])
     tornado_lat_list_new.extend([tornado_lat_list_new[0]])
-    plt.plot(tornado_lon_list_new,tornado_lat_list_new,'r--',linewidth=2.0, zorder=6)
+    plt.plot(tornado_lon_list_new,tornado_lat_list_new,'r--',linewidth=2.5, zorder=6)
 #******************Warnings
-warnings_info = m.readshapefile('./current_ww','warnings',drawbounds=False)
+warnings_info = m.readshapefile('/data/soundings/blumberg/programs/clamps_sa/current_ww','warnings',drawbounds=False)
 for info, warning in zip(m.warnings_info, m.warnings):
     if (info['TYPE'] == 'TO' and info['GTYPE'] == 'P') and (info['STATUS'] != 'CAN' and info['STATUS'] != 'EXP' and info['STATUS'] != 'EXA' and info['STATUS'] != 'EXB' and info['ISSUED'] != 'None'):
         x,y = zip(*warning)
         plt.fill(x,y, edgecolor='k', facecolor='#FF0000',linewidth=0.75, alpha=0.2, zorder=5)
-	plt.plot(x,y, color='#FF0000',linewidth=1.2, zorder=5)
+	plt.plot(x,y, color='#FF0000',linewidth=1.5, zorder=5)
     if (info['TYPE'] == 'SV' and info['GTYPE'] == 'P') and (info['STATUS'] != 'CAN' and info['STATUS'] != 'EXP' and info['STATUS'] != 'EXA' and info['STATUS'] != 'EXB' and info['ISSUED'] != 'None'):
         x,y = zip(*warning)
         plt.fill(x,y, edgecolor='k', facecolor='y',linewidth=0.65, zorder=4, alpha=0.15 )
-	plt.plot(x,y, color='y',linewidth=1.1, zorder=4)
+	plt.plot(x,y, color='#FFFF00',linewidth=1.5, zorder=4)
 #*****************The Plot
 ax1.annotate(title_text, xy=(0.5, 1.0), xytext=(-15, -15), fontsize=14,
     xycoords='axes fraction', textcoords='offset points',
@@ -425,7 +436,8 @@ plt.fill([1000,1000],[1000,1000], edgecolor='k', facecolor='y',linewidth=0.65, z
 plt.fill([1000,1000],[1000,1000], edgecolor='k', facecolor='#FF0000',linewidth=0.75, alpha=0.2, zorder=10, label='Tornado Warning')
 #plt.scatter(new_lons,new_lats,s=8., marker='o',c='k',zorder=7, alpha=0.75, label='Chasers/Spotters')
 if len(new_UND_lons)>0:
-    plt.scatter(new_UND_lons,new_UND_lats,s=280., marker='*',c='#FF33FF',edgecolor='k',linewidth=0.125,zorder=7, alpha=1.0, label='CLAMPS')
+    plt.scatter(new_UND_lons,new_UND_lats,s=480., marker='o',c='#CC00FF',edgecolor='k',linewidth=0.125,zorder=7, alpha=1.0, label='CLAMPS')
+
 #atts_info = m.readshapefile(home_directory+'/spotter_network_density/shapefiles/nexrad_attributes/current_nexattr','atts',drawbounds=False)
 #TVS_count=0
 #for info, att in zip(m.atts_info, m.atts):
@@ -439,11 +451,16 @@ if len(new_UND_lons)>0:
 leg = plt.legend( loc=2, borderaxespad=0.,prop={'size':10})
 leg = leg.get_frame()
 leg.set_facecolor('#F1F0F2')
-m.drawcounties(zorder=3)
+m.drawcounties(color='#D0D0D0', zorder=3)
 
 #PLOT RADAR DATA*******************************************************************
-filename = "/Users/blumberg/Desktop/location_sa/"+file_string
-radar = pyart.io.read(filename)
+import glob
+import os
+#/data/ldm/nexrad2/KTLX/dir.list 
+search_dir = "/data/ldm/nexrad2/" +nearest_radar + '/dir.list'
+list_of_completed = np.genfromtxt(search_dir, dtype=str)
+
+radar = pyart.io.read("/data/ldm/nexrad2/" + nearest_radar + "/" + list_of_completed[-1][1])
 display = pyart.graph.RadarMapDisplay(radar)
 #set projection and map for PyArt. It should be the same as the first projection
 CS = display.plot_ppi_map('reflectivity', 0, vmin=10, vmax=75,
@@ -472,9 +489,9 @@ cbar.set_label('Radar Reflectivity (dBZ)',size=16)
 clabs = ['%i' % f for f in refl_ticks]
 #***************************************
 
-plt.show()
 #Save file stuff
-save_name = "/Users/blumberg/Desktop/location_sa/UND_zoom_"+chaser_time_string+".png"
+#plt.tight_layout()
+save_name = '/data/soundings/http/blumberg/clamps.png'
 plt.savefig(save_name, bbox_inches='tight')
 print "Plot created!!!"
 #****************************************************************************************************************************************
